@@ -176,7 +176,7 @@ function toKyiv(utcStr) {
 }
 
 function fmtTime(d) {
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  return d.getUTCHours().toString().padStart(2,'0') + ':' + d.getUTCMinutes().toString().padStart(2,'0');
 }
 
 function fmtDate(d) {
