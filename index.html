@@ -266,7 +266,7 @@ function buildReport(messages) {
 // ── Рендер ────────────────────────────────────────────────
 function render(messages) {
   const { byPerson, rawRows } = buildReport(messages);
-  const todayKey = dateKey(toKyiv(new Date().toISOString()));
+  const todayKey = dateKey(new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Kyiv' })));
 
   // Stats
   const todayPeople = Object.entries(byPerson)
@@ -357,7 +357,7 @@ async function loadData() {
   try {
     const messages = await getMessages();
     render(messages);
-    const now = toKyiv(new Date().toISOString());
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Kyiv' }));
     document.getElementById('last-updated').textContent =
       'Оновлено: ' + fmtDate(now) + ', ' + fmtTime(now) + ' (Київ)';
   } catch(e) {
