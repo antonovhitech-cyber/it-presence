@@ -44,18 +44,7 @@
   .spin { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Config panel */
-  .config-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; margin-bottom: 2rem; }
-  .config-panel h2 { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
-  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .config-field label { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.08em; }
-  .config-field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; transition: border .15s; }
-  .config-field input:focus { border-color: var(--accent); }
-  .config-field.full { grid-column: 1/-1; }
-  .config-save { margin-top: 12px; padding: 8px 20px; background: var(--accent); color: #000; border: none; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 500; cursor: pointer; letter-spacing: 0.08em; transition: opacity .15s; }
-  .config-save:hover { opacity: 0.85; }
-  .config-toggle { font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-bottom: 1rem; display: inline-block; }
-  .config-toggle:hover { color: var(--text); }
+  .config-toggle { display: none; }
 
   /* Stats */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
@@ -126,29 +115,7 @@
     </button>
   </div>
 
-  <span class="config-toggle" onclick="toggleConfig()" id="cfg-toggle">⚙ Налаштування</span>
-  <div class="config-panel" id="cfg-panel" style="display:none">
-    <h2>Параметри підключення</h2>
-    <div class="config-grid">
-      <div class="config-field">
-        <label>TENANT ID</label>
-        <input type="text" id="cfg-tenant" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-      </div>
-      <div class="config-field">
-        <label>CLIENT ID</label>
-        <input type="text" id="cfg-client" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-      </div>
-      <div class="config-field">
-        <label>CLIENT SECRET</label>
-        <input type="password" id="cfg-secret" placeholder="Ваш client secret value">
-      </div>
-      <div class="config-field">
-        <label>CHAT ID</label>
-        <input type="text" id="cfg-chat" placeholder="19:xxxxxxxxxx@thread.v2">
-      </div>
-    </div>
-    <button class="config-save" onclick="saveConfig()">ЗБЕРЕГТИ І ОНОВИТИ</button>
-  </div>
+
 
   <div id="error-box" class="error-box" style="display:none"></div>
 
@@ -199,61 +166,8 @@
 </div>
 
 <script>
-// ── Конфіг (зберігається в localStorage) ─────────────────
-const DEFAULTS = {
-  tenant: 'cb1c63fb-0671-4845-a564-a597e42423dc',
-  client: '',
-  secret: '',
-  chat:   '19:6721605aaf88431d8a748e04388aa99b@thread.v2'
-};
-
-function getCfg() {
-  return {
-    tenant: localStorage.getItem('pa_tenant') || DEFAULTS.tenant,
-    client: localStorage.getItem('pa_client') || DEFAULTS.client,
-    secret: localStorage.getItem('pa_secret') || DEFAULTS.secret,
-    chat:   localStorage.getItem('pa_chat')   || DEFAULTS.chat,
-  };
-}
-
-function saveCfg(c) {
-  localStorage.setItem('pa_tenant', c.tenant);
-  localStorage.setItem('pa_client', c.client);
-  localStorage.setItem('pa_secret', c.secret);
-  localStorage.setItem('pa_chat',   c.chat);
-}
-
-function populateInputs() {
-  const c = getCfg();
-  document.getElementById('cfg-tenant').value = c.tenant;
-  document.getElementById('cfg-client').value = c.client;
-  document.getElementById('cfg-secret').value = c.secret;
-  document.getElementById('cfg-chat').value   = c.chat;
-}
-
-function saveConfig() {
-  saveCfg({
-    tenant: document.getElementById('cfg-tenant').value.trim(),
-    client: document.getElementById('cfg-client').value.trim(),
-    secret: document.getElementById('cfg-secret').value.trim(),
-    chat:   document.getElementById('cfg-chat').value.trim(),
-  });
-  toggleConfig();
-  loadData();
-}
-
-function toggleConfig() {
-  const p = document.getElementById('cfg-panel');
-  const t = document.getElementById('cfg-toggle');
-  if (p.style.display === 'none') {
-    populateInputs();
-    p.style.display = 'block';
-    t.textContent = '✕ Закрити налаштування';
-  } else {
-    p.style.display = 'none';
-    t.textContent = '⚙ Налаштування';
-  }
-}
+// ── Worker URL ────────────────────────────────────────────
+const WORKER_URL = 'https://wild-glade-62b6.antonov-hitech.workers.dev';
 
 // ── Утиліти часу ──────────────────────────────────────────
 function toKyiv(utcStr) {
@@ -306,38 +220,12 @@ function badgeHtml(fmt) {
   return '<span class="badge" style="background:rgba(255,255,255,.06);color:#888">—</span>';
 }
 
-// ── Отримати токен ────────────────────────────────────────
-async function getToken(cfg) {
-  const r = await fetch(
-    `https://login.microsoftonline.com/${cfg.tenant}/oauth2/v2.0/token`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'https://graph.microsoft.com/.default',
-        client_id: cfg.client,
-        client_secret: cfg.secret,
-      })
-    }
-  );
+// ── Отримати дані через Worker ────────────────────────────
+async function getMessages() {
+  const r = await fetch(WORKER_URL);
   const d = await r.json();
-  if (!d.access_token) throw new Error(d.error_description || 'Не вдалось отримати токен');
-  return d.access_token;
-}
-
-// ── Отримати повідомлення ─────────────────────────────────
-async function getMessages(token, chatId) {
-  let url = `https://graph.microsoft.com/v1.0/chats/${encodeURIComponent(chatId)}/messages?$top=50&$orderby=createdDateTime desc`;
-  const msgs = [];
-  while (url && msgs.length < 200) {
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error.message);
-    msgs.push(...(d.value || []));
-    url = d['@odata.nextLink'] || null;
-  }
-  return msgs;
+  if (d.error) throw new Error(d.error.message);
+  return d.value || [];
 }
 
 // ── Побудувати звіт ───────────────────────────────────────
@@ -461,18 +349,8 @@ function render(messages) {
 
 // ── Головна функція ───────────────────────────────────────
 async function loadData() {
-  const cfg = getCfg();
   const errBox = document.getElementById('error-box');
   errBox.style.display = 'none';
-
-  if (!cfg.client || !cfg.secret) {
-    errBox.textContent = 'Вкажіть Client ID та Client Secret у налаштуваннях';
-    errBox.style.display = 'block';
-    document.getElementById('cfg-panel').style.display = 'block';
-    populateInputs();
-    document.getElementById('cfg-toggle').textContent = '✕ Закрити налаштування';
-    return;
-  }
 
   const btn = document.querySelector('.refresh-btn');
   const icon = document.getElementById('refresh-icon');
@@ -481,8 +359,7 @@ async function loadData() {
   icon.textContent = '↻';
 
   try {
-    const token = await getToken(cfg);
-    const messages = await getMessages(token, cfg.chat);
+    const messages = await getMessages();
     render(messages);
     const now = toKyiv(new Date().toISOString());
     document.getElementById('last-updated').textContent =
@@ -507,14 +384,7 @@ function showTab(id, btn) {
 
 // ── Init ──────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  populateInputs();
-  // Якщо є збережені credentials — одразу завантажуємо
-  const c = getCfg();
-  if (c.client && c.secret) loadData();
-  else {
-    document.getElementById('cfg-panel').style.display = 'block';
-    document.getElementById('cfg-toggle').textContent = '✕ Закрити налаштування';
-  }
+  loadData();
 });
 </script>
 </body>
