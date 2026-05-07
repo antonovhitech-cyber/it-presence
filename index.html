@@ -234,19 +234,15 @@ function buildReport(messages) {
   const rawRows = [];
 
   for (const m of messages) {
-    if (m.messageType !== 'message') continue;
-    if (m.deletedDateTime) continue;
-    if (!m.from?.user?.displayName) continue;
+    if (!m.from || !m.text) continue;
 
-    const text = stripHtml(m.body?.content || '');
-    if (!text || text === '<systemEventMessage/>') continue;
-
-    const kyiv = toKyiv(m.createdDateTime);
+    const kyiv = new Date(m.kyivTime);
     const key = dateKey(kyiv);
-    const name = m.from.user.displayName;
-    const type = classify(text);
+    const name = m.from;
+    const type = m.type;   // arrival / departure / other — від Claude
+    const fmt  = m.format; // office / remote / online / null — від Claude
 
-    rawRows.push({ kyiv, name, text, key });
+    rawRows.push({ kyiv, name, text: m.text, key });
 
     if (!byPerson[name]) byPerson[name] = {};
     if (!byPerson[name][key]) byPerson[name][key] = { arrival: null, departure: null, format: 'unknown', extraNote: null };
@@ -254,12 +250,12 @@ function buildReport(messages) {
     const day = byPerson[name][key];
     if (type === 'arrival' && !day.arrival) {
       day.arrival = kyiv;
-      day.format = detectFormat(text);
+      day.format = fmt || 'online';
     }
     if (type === 'departure') {
       if (!day.departure || kyiv > day.departure) {
         day.departure = kyiv;
-        if (/повернус|підключус|на хвилин|ще буд/.test(text.toLowerCase())) day.extraNote = text;
+        if (/повернус|підключус|на хвилин|ще буд/.test(m.text.toLowerCase())) day.extraNote = m.text;
       }
     }
   }
