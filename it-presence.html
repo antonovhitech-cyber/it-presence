@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ІТ · Присутність</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #c8ff00;
+    --accent-dim: rgba(200,255,0,0.12);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --gray-dim: rgba(255,255,255,0.06);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --red: #f87171;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+
+  /* Layout */
+  .shell { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Header */
+  .header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .header-left h1 { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .header-left p { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .refresh-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: transparent; border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all .15s; letter-spacing: 0.05em; }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .refresh-btn.loading { opacity: 0.5; pointer-events: none; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Config panel */
+  .config-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; margin-bottom: 2rem; }
+  .config-panel h2 { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .config-field label { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.08em; }
+  .config-field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; transition: border .15s; }
+  .config-field input:focus { border-color: var(--accent); }
+  .config-field.full { grid-column: 1/-1; }
+  .config-save { margin-top: 12px; padding: 8px 20px; background: var(--accent); color: #000; border: none; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 500; cursor: pointer; letter-spacing: 0.08em; transition: opacity .15s; }
+  .config-save:hover { opacity: 0.85; }
+  .config-toggle { font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-bottom: 1rem; display: inline-block; }
+  .config-toggle:hover { color: var(--text); }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; }
+  .stat-val { font-family: var(--mono); font-size: 28px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+  .stat-lbl { font-size: 11px; color: var(--muted); }
+  .stat-val.green { color: var(--green); }
+  .stat-val.amber { color: var(--amber); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; margin-bottom: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px; width: fit-content; }
+  .tab { padding: 5px 14px; border-radius: 4px; font-family: var(--mono); font-size: 11px; cursor: pointer; color: var(--muted); border: none; background: transparent; letter-spacing: 0.06em; transition: all .15s; }
+  .tab.active { background: var(--surface2); color: var(--text); }
+
+  /* Table */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-family: var(--mono); font-size: 10px; color: var(--muted); font-weight: 500; padding: 10px 14px; text-align: left; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Day separator */
+  .day-row td { background: var(--surface2); font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; padding: 6px 14px; text-transform: uppercase; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; }
+  .badge-office { background: var(--green-dim); color: var(--green); }
+  .badge-remote { background: var(--blue-dim); color: var(--blue); }
+  .badge-online { background: var(--blue-dim); color: var(--blue); }
+
+  /* Status */
+  .status { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-off { background: var(--muted); }
+  .dot-maybe { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .status-on { color: var(--green); }
+  .status-off { color: var(--muted); }
+  .status-maybe { color: var(--amber); }
+
+  /* Time */
+  .time { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  /* Error/info states */
+  .state-msg { padding: 2rem; text-align: center; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .state-msg.error { color: var(--red); }
+  .error-box { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-family: var(--mono); font-size: 12px; color: var(--red); line-height: 1.6; }
+
+  /* Section hide */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Footer */
+  .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>ІТ · Work Time Tracking</h1>
+      <p id="last-updated">— не оновлювалось —</p>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">
+      <span id="refresh-icon">↻</span> ОНОВИТИ
+    </button>
+  </div>
+
+  <span class="config-toggle" onclick="toggleConfig()" id="cfg-toggle">⚙ Налаштування</span>
+  <div class="config-panel" id="cfg-panel" style="display:none">
+    <h2>Параметри підключення</h2>
+    <div class="config-grid">
+      <div class="config-field">
+        <label>TENANT ID</label>
+        <input type="text" id="cfg-tenant" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      </div>
+      <div class="config-field">
+        <label>CLIENT ID</label>
+        <input type="text" id="cfg-client" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      </div>
+      <div class="config-field">
+        <label>CLIENT SECRET</label>
+        <input type="password" id="cfg-secret" placeholder="Ваш client secret value">
+      </div>
+      <div class="config-field">
+        <label>CHAT ID</label>
+        <input type="text" id="cfg-chat" placeholder="19:xxxxxxxxxx@thread.v2">
+      </div>
+    </div>
+    <button class="config-save" onclick="saveConfig()">ЗБЕРЕГТИ І ОНОВИТИ</button>
+  </div>
+
+  <div id="error-box" class="error-box" style="display:none"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Зафіксовано сьогодні</div></div>
+    <div class="stat"><div class="stat-val green" id="s-active">—</div><div class="stat-lbl">Зараз на роботі</div></div>
+    <div class="stat"><div class="stat-val" id="s-office">—</div><div class="stat-lbl">В офісі</div></div>
+    <div class="stat"><div class="stat-val amber" id="s-remote">—</div><div class="stat-lbl">Віддалено / онлайн</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('today', this)">Сьогодні</button>
+    <button class="tab" onclick="showTab('history', this)">Історія</button>
+    <button class="tab" onclick="showTab('raw', this)">Всі повідомлення</button>
+  </div>
+
+  <div id="today" class="section active">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Співробітник</th><th>Прихід</th><th>Формат</th><th>Відхід</th><th>Статус зараз</th></tr></thead>
+        <tbody id="today-body"><tr><td colspan="5" class="state-msg">Натисніть «Оновити» для завантаження даних</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="history" class="section">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Дата</th><th>Співробітник</th><th>Прихід</th><th>Формат</th><th>Відхід</th></tr></thead>
+        <tbody id="history-body"><tr><td colspan="5" class="state-msg">Натисніть «Оновити» для завантаження даних</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="raw" class="section">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Дата/час (Київ)</th><th>Хто</th><th>Повідомлення</th></tr></thead>
+        <tbody id="raw-body"><tr><td colspan="3" class="state-msg">Натисніть «Оновити» для завантаження даних</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PA Global · ІТ відділ</span>
+    <span id="footer-count">—</span>
+  </div>
+</div>
+
+<script>
+// ── Конфіг (зберігається в localStorage) ─────────────────
+const DEFAULTS = {
+  tenant: 'cb1c63fb-0671-4845-a564-a597e42423dc',
+  client: '',
+  secret: '',
+  chat:   '19:6721605aaf88431d8a748e04388aa99b@thread.v2'
+};
+
+function getCfg() {
+  return {
+    tenant: localStorage.getItem('pa_tenant') || DEFAULTS.tenant,
+    client: localStorage.getItem('pa_client') || DEFAULTS.client,
+    secret: localStorage.getItem('pa_secret') || DEFAULTS.secret,
+    chat:   localStorage.getItem('pa_chat')   || DEFAULTS.chat,
+  };
+}
+
+function saveCfg(c) {
+  localStorage.setItem('pa_tenant', c.tenant);
+  localStorage.setItem('pa_client', c.client);
+  localStorage.setItem('pa_secret', c.secret);
+  localStorage.setItem('pa_chat',   c.chat);
+}
+
+function populateInputs() {
+  const c = getCfg();
+  document.getElementById('cfg-tenant').value = c.tenant;
+  document.getElementById('cfg-client').value = c.client;
+  document.getElementById('cfg-secret').value = c.secret;
+  document.getElementById('cfg-chat').value   = c.chat;
+}
+
+function saveConfig() {
+  saveCfg({
+    tenant: document.getElementById('cfg-tenant').value.trim(),
+    client: document.getElementById('cfg-client').value.trim(),
+    secret: document.getElementById('cfg-secret').value.trim(),
+    chat:   document.getElementById('cfg-chat').value.trim(),
+  });
+  toggleConfig();
+  loadData();
+}
+
+function toggleConfig() {
+  const p = document.getElementById('cfg-panel');
+  const t = document.getElementById('cfg-toggle');
+  if (p.style.display === 'none') {
+    populateInputs();
+    p.style.display = 'block';
+    t.textContent = '✕ Закрити налаштування';
+  } else {
+    p.style.display = 'none';
+    t.textContent = '⚙ Налаштування';
+  }
+}
+
+// ── Утиліти часу ──────────────────────────────────────────
+function toKyiv(utcStr) {
+  const d = new Date(utcStr);
+  return new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Kyiv' }));
+}
+
+function fmtTime(d) {
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function fmtDate(d) {
+  return d.getDate().toString().padStart(2,'0') + '.' +
+         (d.getMonth()+1).toString().padStart(2,'0') + '.' +
+         d.getFullYear();
+}
+
+function dateKey(d) {
+  return d.getFullYear() + '-' +
+         (d.getMonth()+1).toString().padStart(2,'0') + '-' +
+         d.getDate().toString().padStart(2,'0');
+}
+
+function stripHtml(html) {
+  return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+}
+
+// ── Класифікація повідомлень ──────────────────────────────
+function classify(text) {
+  const t = text.toLowerCase();
+  const isArrival = /привіт|приємного|ранку|доброго|добрий|good morning|hello|вийшов на зв|в офіс|в офісі|онлайн|віддален|підключив|підключус|на місці|розпочин|починаю/.test(t);
+  const isDeparture = /пока|бувайте|бувай|до завтра|гарного вечора|гарний вечір|іду|пішов|офлайн|відключаюсь|відключився|завершую|на сьогодні все|до зустр|вимкнув|bye|good night/.test(t);
+  if (isArrival && !isDeparture) return 'arrival';
+  if (isDeparture) return 'departure';
+  return null;
+}
+
+function detectFormat(text) {
+  const t = text.toLowerCase();
+  if (/в офіс|офіс/.test(t)) return 'office';
+  if (/віддален/.test(t)) return 'remote';
+  if (/онлайн|online/.test(t)) return 'online';
+  return 'unknown';
+}
+
+function badgeHtml(fmt) {
+  if (fmt === 'office')  return '<span class="badge badge-office">в офісі</span>';
+  if (fmt === 'remote')  return '<span class="badge badge-remote">віддалено</span>';
+  if (fmt === 'online')  return '<span class="badge badge-online">онлайн</span>';
+  return '<span class="badge" style="background:rgba(255,255,255,.06);color:#888">—</span>';
+}
+
+// ── Отримати токен ────────────────────────────────────────
+async function getToken(cfg) {
+  const r = await fetch(
+    `https://login.microsoftonline.com/${cfg.tenant}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'https://graph.microsoft.com/.default',
+        client_id: cfg.client,
+        client_secret: cfg.secret,
+      })
+    }
+  );
+  const d = await r.json();
+  if (!d.access_token) throw new Error(d.error_description || 'Не вдалось отримати токен');
+  return d.access_token;
+}
+
+// ── Отримати повідомлення ─────────────────────────────────
+async function getMessages(token, chatId) {
+  let url = `https://graph.microsoft.com/v1.0/chats/${encodeURIComponent(chatId)}/messages?$top=50&$orderby=createdDateTime desc`;
+  const msgs = [];
+  while (url && msgs.length < 200) {
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message);
+    msgs.push(...(d.value || []));
+    url = d['@odata.nextLink'] || null;
+  }
+  return msgs;
+}
+
+// ── Побудувати звіт ───────────────────────────────────────
+function buildReport(messages) {
+  const byPerson = {};
+  const rawRows = [];
+
+  for (const m of messages) {
+    if (m.messageType !== 'message') continue;
+    if (m.deletedDateTime) continue;
+    if (!m.from?.user?.displayName) continue;
+
+    const text = stripHtml(m.body?.content || '');
+    if (!text || text === '<systemEventMessage/>') continue;
+
+    const kyiv = toKyiv(m.createdDateTime);
+    const key = dateKey(kyiv);
+    const name = m.from.user.displayName;
+    const type = classify(text);
+
+    rawRows.push({ kyiv, name, text, key });
+
+    if (!byPerson[name]) byPerson[name] = {};
+    if (!byPerson[name][key]) byPerson[name][key] = { arrival: null, departure: null, format: 'unknown', extraNote: null };
+
+    const day = byPerson[name][key];
+    if (type === 'arrival' && !day.arrival) {
+      day.arrival = kyiv;
+      day.format = detectFormat(text);
+    }
+    if (type === 'departure') {
+      if (!day.departure || kyiv > day.departure) {
+        day.departure = kyiv;
+        if (/повернус|підключус|на хвилин|ще буд/.test(text.toLowerCase())) day.extraNote = text;
+      }
+    }
+  }
+
+  return { byPerson, rawRows };
+}
+
+// ── Рендер ────────────────────────────────────────────────
+function render(messages) {
+  const { byPerson, rawRows } = buildReport(messages);
+  const todayKey = dateKey(toKyiv(new Date().toISOString()));
+
+  // Stats
+  const todayPeople = Object.entries(byPerson)
+    .filter(([,days]) => days[todayKey])
+    .map(([name, days]) => ({ name, ...days[todayKey] }));
+
+  const active = todayPeople.filter(p => p.arrival && !p.departure);
+  const inOffice = todayPeople.filter(p => p.format === 'office');
+  const remoteOnline = todayPeople.filter(p => p.format === 'remote' || p.format === 'online');
+
+  document.getElementById('s-total').textContent = todayPeople.length;
+  document.getElementById('s-active').textContent = active.length;
+  document.getElementById('s-office').textContent = inOffice.length;
+  document.getElementById('s-remote').textContent = remoteOnline.length;
+
+  // TODAY
+  const tb = document.getElementById('today-body');
+  if (!todayPeople.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="state-msg">Сьогодні повідомлень ще немає</td></tr>';
+  } else {
+    todayPeople.sort((a, b) => (a.arrival||0) - (b.arrival||0));
+    tb.innerHTML = todayPeople.map(p => {
+      let statusHtml, dotClass, statusClass;
+      if (p.extraNote) {
+        dotClass = 'dot-maybe'; statusClass = 'status-maybe'; statusHtml = 'Пішов / повернеться';
+      } else if (p.departure) {
+        dotClass = 'dot-off'; statusClass = 'status-off'; statusHtml = 'Пішов';
+      } else {
+        dotClass = 'dot-on'; statusClass = 'status-on'; statusHtml = 'На роботі';
+      }
+      return `<tr>
+        <td>${p.name}</td>
+        <td class="time">${p.arrival ? fmtTime(p.arrival) : '—'}</td>
+        <td>${badgeHtml(p.format)}</td>
+        <td class="time">${p.departure ? fmtTime(p.departure) : '—'}</td>
+        <td><span class="status ${statusClass}"><span class="dot ${dotClass}"></span>${statusHtml}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // HISTORY
+  const allDays = new Set();
+  for (const days of Object.values(byPerson)) for (const k of Object.keys(days)) allDays.add(k);
+  const sortedDays = [...allDays].sort().reverse();
+
+  const hb = document.getElementById('history-body');
+  let hHtml = '';
+  for (const day of sortedDays) {
+    const [y,m,d] = day.split('-');
+    const label = `${d}.${m}.${y}` + (day === todayKey ? ' (сьогодні)' : '');
+    hHtml += `<tr class="day-row"><td colspan="5">${label}</td></tr>`;
+    const rows = Object.entries(byPerson)
+      .filter(([,days]) => days[day])
+      .map(([name, days]) => ({ name, ...days[day] }))
+      .sort((a,b) => (a.arrival||0)-(b.arrival||0));
+    for (const p of rows) {
+      hHtml += `<tr>
+        <td></td>
+        <td>${p.name}</td>
+        <td class="time">${p.arrival ? fmtTime(p.arrival) : '—'}</td>
+        <td>${badgeHtml(p.format)}</td>
+        <td class="time">${p.departure ? fmtTime(p.departure) : '—'}</td>
+      </tr>`;
+    }
+  }
+  hb.innerHTML = hHtml || '<tr><td colspan="5" class="state-msg">Немає даних</td></tr>';
+
+  // RAW
+  const rb = document.getElementById('raw-body');
+  rb.innerHTML = rawRows.map(r =>
+    `<tr><td class="time">${fmtDate(r.kyiv)} ${fmtTime(r.kyiv)}</td><td>${r.name}</td><td style="color:var(--muted)">${r.text.substring(0,120)}</td></tr>`
+  ).join('');
+
+  document.getElementById('footer-count').textContent = `${messages.length} повідомлень · ${Object.keys(byPerson).length} співробітників`;
+}
+
+// ── Головна функція ───────────────────────────────────────
+async function loadData() {
+  const cfg = getCfg();
+  const errBox = document.getElementById('error-box');
+  errBox.style.display = 'none';
+
+  if (!cfg.client || !cfg.secret) {
+    errBox.textContent = 'Вкажіть Client ID та Client Secret у налаштуваннях';
+    errBox.style.display = 'block';
+    document.getElementById('cfg-panel').style.display = 'block';
+    populateInputs();
+    document.getElementById('cfg-toggle').textContent = '✕ Закрити налаштування';
+    return;
+  }
+
+  const btn = document.querySelector('.refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  btn.classList.add('loading');
+  icon.classList.add('spin');
+  icon.textContent = '↻';
+
+  try {
+    const token = await getToken(cfg);
+    const messages = await getMessages(token, cfg.chat);
+    render(messages);
+    const now = toKyiv(new Date().toISOString());
+    document.getElementById('last-updated').textContent =
+      'Оновлено: ' + fmtDate(now) + ', ' + fmtTime(now) + ' (Київ)';
+  } catch(e) {
+    errBox.textContent = 'Помилка: ' + e.message;
+    errBox.style.display = 'block';
+  } finally {
+    btn.classList.remove('loading');
+    icon.classList.remove('spin');
+    icon.textContent = '↻';
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  populateInputs();
+  // Якщо є збережені credentials — одразу завантажуємо
+  const c = getCfg();
+  if (c.client && c.secret) loadData();
+  else {
+    document.getElementById('cfg-panel').style.display = 'block';
+    document.getElementById('cfg-toggle').textContent = '✕ Закрити налаштування';
+  }
+});
+</script>
+</body>
+</html>
